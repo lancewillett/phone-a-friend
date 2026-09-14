@@ -4,7 +4,7 @@ Guidance for AI coding agents working in `phone-a-friend`.
 
 ## What This Is
 
-`phone-a-friend` is a TypeScript CLI for relaying prompts + repository context to coding backends (Claude, Antigravity, Codex, Gemini, Ollama, OpenCode). Available via `npm install -g @freibergergarcia/phone-a-friend` or from source. All backend `run()` methods are async (`Promise<string>`). Backends may also implement `runStream()` returning `AsyncIterable<string>` for token-level streaming.
+`phone-a-friend` is a TypeScript CLI for relaying prompts + repository context to coding backends (Claude, Antigravity, Codex, Gemini, Ollama, OpenCode, xAI). Available via `npm install -g @freibergergarcia/phone-a-friend` or from source. All backend `run()` methods are async (`Promise<string>`). Backends may also implement `runStream()` returning `AsyncIterable<string>` for token-level streaming.
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ src/
   stream-parsers.ts  Stream parsers — SSE (OpenAI-compatible), NDJSON (Ollama), Claude JSON snapshots
   context.ts         RelayContext interface
   version.ts         Shared version reader
-  detection.ts       Backend detection (CLI, Local, Host)
+  detection.ts       Backend detection (CLI, Local, API, Host)
   config.ts          TOML configuration system
   doctor.ts          Health check command
   diagnostics.ts     PATH/executable identity and bounded version probes for doctor
@@ -37,6 +37,7 @@ src/
     codex.ts         Codex subprocess backend
     gemini.ts        Gemini subprocess backend
     ollama.ts        Ollama HTTP API backend (native fetch)
+    xai.ts           xAI Responses HTTP backend (web/X search, transcript replay)
     opencode.ts      OpenCode CLI subprocess backend (`opencode run`, agentic with tool calling)
   agentic/
     index.ts         Public API — Orchestrator, TranscriptBus exports
@@ -81,15 +82,16 @@ dist/                Built bundle (committed, self-contained)
 - Shared `spawnCli()` async subprocess utility in `src/backends/index.ts` — used by all CLI backends (Antigravity, Codex, Claude, Gemini, OpenCode) for non-blocking execution with timeout, signal forwarding, stderr draining, and spawn error handling. Throws `SpawnCliError` (extends `BackendError`) on non-zero exit, preserving stdout/stderr/exitCode for callers that need partial output from failed runs
 - `BackendRunOptions` shared interface in `src/backends/index.ts` — single options type for `run()` and `runStream()` across all backends, includes schema, session, and fast spawn fields
 - `RelayObserver` in `src/relay.ts` — optional `onScope`, `onDrift`, `onEvent`, `onSessionLinked` hooks passed via `observer` on `RelayOptions`/`ReviewRelayOptions`. Backends report progress through `BackendRunOptions.onEvent`/`ReviewOptions.onEvent` as `BackendEvent`s; no hook is invoked and no progress stream is requested unless the caller supplied one. Used by task tracking (see "Task tracking").
-- Backend `localFileAccess: boolean` property — declares whether the backend can read repo files via its own tooling when given a repo path. `true` for antigravity/codex/gemini/claude/opencode (PaF passes `--repo`/`--dir`/equivalent and the backend reads files itself). `false` for ollama (HTTP API, no native file access; receives only prompt + context + diff payloads, never raw file contents). PaF does not auto-inline repo files for either case — keeping local files out of the relay payload is the responsibility of the caller (see "Context hygiene" rules in the relay-issuing skills/commands).
+- Backend `localFileAccess: boolean` property — declares whether the backend can read repo files via its own tooling when given a repo path. `true` for antigravity/codex/gemini/claude/opencode (PaF passes `--repo`/`--dir`/equivalent and the backend reads files itself). `false` for ollama and xai (HTTP APIs, no native file access; receives only prompt + context + diff payloads, never raw file contents). PaF does not auto-inline repo files for either case — keeping local files out of the relay payload is the responsibility of the caller (see "Context hygiene" rules in the relay-issuing skills/commands).
 - Antigravity backend in `src/backends/antigravity.ts` (`agy --add-dir <repo> --print-timeout <seconds>s --sandbox --mode plan --prompt <prompt>`, read-only only, no sessions yet)
 - Claude backend in `src/backends/claude.ts` (`run()` via `spawnCli()`, `runStream()` via direct `spawn` with streaming parser, Claude Code 2.1.224+ peer messaging via `native|accept|refuse`)
 - Codex backend in `src/backends/codex.ts` (via `spawnCli()`, output file + stdout fallback)
 - Gemini backend in `src/backends/gemini.ts` (via `spawnCli()`)
+- xAI: `src/backends/xai.ts`, `XAI_API_KEY` auth, default `grok-4.6`, web/X search, and transcript replay.
 - Ollama HTTP backend in `src/backends/ollama.ts` (fetch to localhost:11434, already async)
 - OpenCode CLI backend in `src/backends/opencode.ts` (`run()` and `runStream()` via subprocess, `review()` with native repo access via `--dir`, model normalization `qwen3-coder` to `ollama/qwen3-coder`, NDJSON output parsing, session support via `--session`)
 - Stream parsers in `src/stream-parsers.ts` — SSE (OpenAI-compatible), NDJSON (Ollama), Claude JSON snapshots, OpenCode NDJSON events
-- Backend detection (CLI + Local + Host) in `src/detection.ts`
+- Backend detection (CLI + Local + API + Host) in `src/detection.ts`
 - TOML config system in `src/config.ts` — `defaults.stream = true` enables streaming by default
 - Depth guard env var: `PHONE_A_FRIEND_DEPTH`
 - Default sandbox: `read-only`
@@ -186,6 +188,7 @@ phone-a-friend --to codex --repo <path> --prompt "..."
 phone-a-friend --to antigravity --repo <path> --prompt "..." --sandbox read-only
 phone-a-friend --to claude --repo <path> --prompt "..."
 phone-a-friend --to gemini --repo <path> --prompt "..."
+phone-a-friend --to xai --prompt "..."
 phone-a-friend --to ollama --repo <path> --prompt "..." --model qwen3
 phone-a-friend --to opencode --repo <path> --prompt "..." --model qwen3-coder  # Local agentic (OpenCode + Ollama)
 phone-a-friend --prompt "..."               # Uses default backend from config
@@ -567,7 +570,7 @@ Implementation notes:
 - Antigravity: sessions unsupported for now (`resumeStrategy: unsupported`); PaF rejects `--session` and `--backend-session`.
 - Gemini: `--session-id <uuid>` on start, `--resume <uuid>` on resume. UUID generated client-side (mirrors Claude). Never `--resume latest`, so a label always maps to one conversation.
 - Codex: thread ID captured from `thread.started` JSONL event, `codex exec resume <thread-id>`
-- Ollama: stateless replay (full history prepended to each request)
+- Ollama and xAI: stateless replay (full history prepended to each request)
 - `--backend-session` is only valid for backends with `resumeStrategy: 'native-session'` (Codex, Claude, Gemini, OpenCode)
 - `--session` errors out for backends with `resumeStrategy: 'unsupported'` instead of silently fresh-spawning each call (currently Antigravity)
 - An unknown `--session <label>` no longer silently fresh-spawns; PaF prints a stderr warning before starting a new session under that label
@@ -575,9 +578,9 @@ Implementation notes:
 
 ### History persistence rule
 
-PaF only persists conversation `history` for backends whose resume mechanism actually replays it (`resumeStrategy === 'transcript-replay'` — currently only Ollama). For everything else (`native-session`, `unsupported`), the row stores metadata + `backendSessionId` and `history: []`. Existing rows that were created before this rule have their fat history trimmed on the next write to that label.
+PaF only persists conversation `history` for backends whose resume mechanism actually replays it (`resumeStrategy === 'transcript-replay'` — currently Ollama and xAI). For everything else (`native-session`, `unsupported`), the row stores metadata + `backendSessionId` and `history: []`. Existing rows that were created before this rule have their fat history trimmed on the next write to that label.
 
-Why: Codex/Claude/OpenCode resume from their own server-side state. Storing the full expanded prompts + replies on PaF's side is dead weight that bloats the session store without affecting resume behavior. For Ollama, history *is* the resume mechanism (replay), so it's kept intact.
+Why: Codex/Claude/OpenCode resume from their own server-side state. Storing the full expanded prompts + replies on PaF's side is dead weight that bloats the session store without affecting resume behavior. For Ollama and xAI, history *is* the resume mechanism (replay), so it's kept intact.
 
 ### Atomicity, corruption, concurrency
 
@@ -604,7 +607,7 @@ phone-a-friend session prune --all             # drop everything
 
 ## Fast spawn
 
-The `--fast` flag maps to `--pure` for the OpenCode backend, skipping external plugins. It is a no-op for Antigravity, Claude, Codex, Gemini, and Ollama. Claude intentionally does not use `--bare` because bare mode skips OAuth/keychain reads and breaks subscription auth. For OpenCode, this is useful for self-contained tasks where external plugins are not needed.
+The `--fast` flag maps to `--pure` for the OpenCode backend, skipping external plugins. It is a no-op for Antigravity, Claude, Codex, Gemini, Ollama, and xAI. Claude intentionally does not use `--bare` because bare mode skips OAuth/keychain reads and breaks subscription auth. For OpenCode, this is useful for self-contained tasks where external plugins are not needed.
 
 ## Scope
 

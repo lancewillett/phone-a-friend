@@ -34,7 +34,7 @@ import {
  * everything they have is working).
  */
 function countableBackends(report: DetectionReport): BackendStatus[] {
-  return [...report.cli, ...report.local].filter(b => {
+  return [...report.cli, ...report.local, ...report.api].filter(b => {
     if (b.planned) return false;
     if (b.optional && !b.available) return false;
     return true;
@@ -125,6 +125,14 @@ function formatHumanReadable(
     }
   }
 
+  if (report.api.length) {
+    lines.push('    API:');
+    for (const b of report.api) {
+      lines.push(`  ${formatBackendLine(b)}`);
+      lines.push(...formatDiagnosticLines(b));
+    }
+  }
+
   lines.push('');
 
   // Host Integrations. Commands already detailed above (codex, opencode)
@@ -202,7 +210,7 @@ function formatDiagnosticLines(b: BackendStatus): string[] {
       lines.push(`${DIAG_INDENT}${theme.hint('also on PATH:')} ${others}${flag}`);
     }
   }
-  if (b.model && (exe?.selected || b.name === 'ollama')) {
+  if (b.model && (exe?.selected || b.name === 'ollama' || b.category === 'api')) {
     const requested = b.model.requested
       ? `${b.model.requested} (from PaF config)`
       : 'backend default';
@@ -291,6 +299,7 @@ function formatJson(
     backends: {
       cli: normalizeForJson(report.cli),
       local: normalizeForJson(report.local),
+      api: normalizeForJson(report.api),
     },
     host: normalizeForJson(report.host),
     hostInstallations,

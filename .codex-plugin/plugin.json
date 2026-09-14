@@ -11,7 +11,7 @@
   "interface": {
     "displayName": "Phone a Friend",
     "shortDescription": "Relay prompts to other AI coding backends",
-    "longDescription": "Phone a Friend is a relay CLI that lets AI coding agents collaborate. From inside Codex, ask Claude, Gemini, OpenCode, or Ollama for second opinions, code reviews, and iterative refinement. The phone-a-team workflow spawns multi-model reviewer/critic/synthesizer subagents that share cross-host sessions across rounds.",
+    "longDescription": "Phone a Friend is a relay CLI that lets AI coding agents collaborate. From inside Codex, ask Claude, Gemini, OpenCode, Ollama, or xAI for second opinions, code reviews, and iterative refinement. The phone-a-team workflow spawns multi-model reviewer/critic/synthesizer subagents that share cross-host sessions across rounds.",
     "developerName": "Bruno Freiberger",
     "category": "Productivity",
     "capabilities": [

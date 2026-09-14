@@ -1,6 +1,6 @@
 ---
 name: phone-a-friend
-description: Ask Antigravity, Codex, Gemini, Claude, OpenCode, or Ollama for a second opinion through the phone-a-friend CLI while preserving the user's request in --prompt.
+description: Ask Antigravity, Codex, Gemini, Claude, OpenCode, Ollama, or xAI for a second opinion through the phone-a-friend CLI while preserving the user's request in --prompt.
 argument-hint: [optional review focus]
 ---
 
@@ -10,7 +10,7 @@ Use this skill after an assistant reply you want reviewed by another AI.
 
 ## Goal
 
-Send compact task context + the latest assistant reply to a backend (Antigravity, Codex, Gemini, Claude, OpenCode, or Ollama) using `phone-a-friend`, then bring the feedback back into the current conversation.
+Send compact task context + the latest assistant reply to a backend (Antigravity, Codex, Gemini, Claude, OpenCode, Ollama, or xAI) using `phone-a-friend`, then bring the feedback back into the current conversation.
 
 ## Execution rules
 
@@ -24,9 +24,9 @@ Send compact task context + the latest assistant reply to a backend (Antigravity
   or general second opinion, use normal prompt mode with `--repo "$PWD"`.
 - If the user says not to edit files, keep that instruction in `--prompt`.
 - From OpenCode, do not select `opencode` as the friend backend. Choose
-  `antigravity`, `codex`, `gemini`, `claude`, or `ollama`.
+  `antigravity`, `codex`, `gemini`, `claude`, `ollama`, or `xai`.
 - From Codex, do not select `codex` as the friend backend. Choose `claude`,
-  `antigravity`, `gemini`, `opencode`, or `ollama`. PaF enforces this with the same
+  `antigravity`, `gemini`, `opencode`, `ollama`, or `xai`. PaF enforces this with the same
   `PHONE_A_FRIEND_HOST` recursion guard used for OpenCode.
 - Suppress the working-tree diff by default (see "Diff suppression" below);
   only include the diff when the user explicitly asked for a
@@ -87,10 +87,10 @@ install shims set the marker automatically; be explicit when constructing
 commands by hand. From Claude Code, the marker is not needed.
 
 When running from OpenCode, do not select `opencode` as the friend backend.
-Choose `antigravity`, `codex`, `gemini`, `claude`, or `ollama`.
+Choose `antigravity`, `codex`, `gemini`, `claude`, `ollama`, or `xai`.
 
 When running from Codex, do not select `codex` as the friend backend. Choose
-`claude`, `antigravity`, `gemini`, `opencode`, or `ollama`.
+`claude`, `antigravity`, `gemini`, `opencode`, `ollama`, or `xai`.
 
 ## Relay mode
 
@@ -187,8 +187,8 @@ Inlining repo content is wasteful, can leak tracked uncommitted edits or
 committed secrets into the relay payload, and bypasses the backend's
 normal file-access controls.
 
-Backend exception: `ollama` has `localFileAccess: false` and cannot read
-the repo on its own. For Ollama specifically, ask the user before sending
+Backend exceptions: `ollama` and `xai` have `localFileAccess: false` and cannot read
+the repo themselves. For either backend, ask the user before sending
 file content, and send a minimal excerpt rather than bulk-dumping files
 or git output.
 
@@ -326,7 +326,7 @@ When building binary-mode relay commands, add `--fast` if ALL of these are true:
 - The task does NOT need MCP tools (GitHub API, Slack, database queries)
 
 `--fast` maps to `--pure` for OpenCode, skipping external plugins. It is a
-no-op for Antigravity, Claude, Codex, Gemini, and Ollama. Claude intentionally does not
+no-op for Antigravity, Claude, Codex, Gemini, Ollama, and xAI. Claude intentionally does not
 use `--bare` because bare mode skips OAuth/keychain reads and can break
 subscription auth.
 
@@ -533,7 +533,7 @@ Use `doctor --json` to diagnose PATH/version mismatches before retrying.
   `--backend-session` to Antigravity relay calls.
 - **Codex, Claude, OpenCode**: native session resume. Follow-up prompts
   can send deltas only.
-- **Ollama**: replays full history each call. Sessions work but prompt
+- **Ollama and xAI**: replay full history each call. Sessions work but prompt
   size grows with each turn. Keep follow-ups concise.
 - **Gemini**: native session resume (same as Codex/Claude/OpenCode).
   PaF generates the session UUID client-side, pins it with `--session-id`
@@ -642,3 +642,9 @@ This does NOT apply to `--to codex` or `--to claude`.
   temp file — it muddies git status and risks accidental commit. Repo
   content itself does not need a temp file at all; see "Context hygiene"
   above.
+
+### xAI live research
+
+Use `--to xai` with `XAI_API_KEY` for web and X search (always on).
+Default model: `grok-4.6`; override with `--model` or `backends.xai.model`.
+Preserve cited `Sources:` URLs; schema mode omits the footer.
