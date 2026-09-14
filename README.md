@@ -187,7 +187,7 @@ phone-a-friend --to codex --prompt "List files that need refactoring" \
   --schema '{"type":"object","properties":{"files":{"type":"array","items":{"type":"string"}}},"required":["files"],"additionalProperties":false}'
 ```
 
-Claude, Codex, and Ollama enforce the schema through their native structured-output surfaces. Antigravity, Gemini, xAI, and OpenCode CLI use prompt injection (best-effort), with PaF validating built-in verdict envelopes before returning them.
+Claude, Codex, Ollama, and xAI enforce the schema through their native structured-output surfaces. Antigravity, Gemini, and OpenCode CLI use prompt injection (best-effort), with PaF validating built-in verdict envelopes before returning them.
 
 Codex also receives the schema on follow-ups through `--session` or
 `--backend-session`. PaF checks `codex exec resume --help` using the invocation's

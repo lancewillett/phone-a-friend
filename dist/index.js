@@ -72237,7 +72237,7 @@ function StatusPanel({ report, loading, refreshing, error: error2, pluginInstall
     }
     return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Box_default, { flexDirection: "column", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Text, { color: "cyan", children: "Scanning backends..." }) });
   }
-  const allRelay = [...report.cli, ...report.local, ...report.api ?? []];
+  const allRelay = [...report.cli, ...report.local, ...report.api];
   const countable = allRelay.filter((b) => !b.planned && !(b.optional && !b.available));
   const available = countable.filter((b) => b.available).length;
   const total = countable.length;
@@ -72287,7 +72287,7 @@ function StatusPanel({ report, loading, refreshing, error: error2, pluginInstall
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "CLI", backends: report.cli }),
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "Local", backends: report.local }),
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "API", backends: report.api ?? [] })
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "API", backends: report.api })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(Box_default, { flexDirection: "column", children: [
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Text, { bold: true, underline: true, children: "Host Integrations" }),
@@ -72487,7 +72487,7 @@ function BackendsPanel({ report, onEditingChange }) {
   const [modelSelectedIndex, setModelSelectedIndex] = (0, import_react35.useState)(0);
   const [config, setConfig] = (0, import_react35.useState)(() => loadConfig());
   const [saveMessage, setSaveMessage] = (0, import_react35.useState)(null);
-  const allBackendsForClamp = report ? [...report.cli, ...report.local, ...report.api ?? [], ...report.host] : [];
+  const allBackendsForClamp = report ? [...report.cli, ...report.local, ...report.api, ...report.host] : [];
   const currentModels = allBackendsForClamp[selectedIndex]?.models ?? [];
   (0, import_react35.useEffect)(() => {
     if (mode === "modelSelect" && currentModels.length > 0 && modelSelectedIndex >= currentModels.length) {
@@ -72538,7 +72538,7 @@ function BackendsPanel({ report, onEditingChange }) {
   use_input_default((input, key) => {
     if (mode === "modelSelect") {
       if (key.return) {
-        const allBackends2 = report ? [...report.cli, ...report.local, ...report.api ?? [], ...report.host] : [];
+        const allBackends2 = report ? [...report.cli, ...report.local, ...report.api, ...report.host] : [];
         const selected2 = allBackends2[selectedIndex];
         const models = selected2?.models ?? [];
         const model = models[modelSelectedIndex];
@@ -72552,7 +72552,7 @@ function BackendsPanel({ report, onEditingChange }) {
       return;
     }
     if (key.return) {
-      const allBackends2 = report ? [...report.cli, ...report.local, ...report.api ?? [], ...report.host] : [];
+      const allBackends2 = report ? [...report.cli, ...report.local, ...report.api, ...report.host] : [];
       const selected2 = allBackends2[selectedIndex];
       if (selected2 && (selected2.models?.length ?? 0) > 0) {
         enterModelSelect(selected2.name, selected2.models);
@@ -72565,7 +72565,7 @@ function BackendsPanel({ report, onEditingChange }) {
   const allBackends = [
     ...report.cli,
     ...report.local,
-    ...report.api ?? [],
+    ...report.api,
     ...report.host
   ];
   const selected = allBackends[selectedIndex];
@@ -72814,7 +72814,7 @@ import { dirname as dirname10 } from "path";
 function formatBackendSummary(report) {
   const lines = [];
   const mark2 = (b) => b.available ? "\u2713" : "\u2717";
-  const relay2 = [...report.cli, ...report.local, ...report.api ?? []];
+  const relay2 = [...report.cli, ...report.local, ...report.api];
   const ready = relay2.filter((b) => b.available && !b.planned).length;
   const total = relay2.filter((b) => !b.planned && !(b.optional && !b.available)).length;
   lines.push(`Backend re-scan complete \u2014 ${ready} of ${total} relay backends ready`);
@@ -76432,9 +76432,19 @@ function object(value) {
 function array(value) {
   return Array.isArray(value) ? value : [];
 }
-function answer(response) {
+function safeDetail(detail, key) {
+  return detail.split(key).join("[REDACTED]").slice(0, 200);
+}
+function answer(response, key) {
   if (response.status !== "completed" || response.error != null) {
-    throw new XaiBackendError("xAI response failed");
+    const error2 = object(response.error);
+    const detail = [
+      ["status", response.status ?? "unknown"],
+      ["reason", object(response.incomplete_details).reason],
+      ["code", error2.code],
+      ["message", error2.message]
+    ].filter(([, value]) => typeof value === "string").map(([name, value]) => `${name}=${value}`).join("; ");
+    throw new XaiBackendError(`xAI response failed: ${safeDetail(detail, key)}`);
   }
   const parts = [];
   const urls = /* @__PURE__ */ new Set();
@@ -76473,40 +76483,51 @@ var XaiBackend = class {
   async run(opts) {
     const key = opts.env.XAI_API_KEY?.trim();
     if (!key) throw new XaiBackendError("Set XAI_API_KEY to use xai. Get an API key at https://console.x.ai");
+    let schema;
+    if (opts.schema) {
+      try {
+        schema = JSON.parse(opts.schema);
+      } catch {
+      }
+      if (object(schema) !== schema) throw new XaiBackendError("--schema must be a JSON object for xai");
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), opts.timeoutSeconds * 1e3);
     try {
-      const prompt = opts.schema ? `${opts.prompt}
-
-Respond with JSON only. The response must match this JSON Schema exactly:
-${opts.schema}` : opts.prompt;
       const resp = await fetch("https://api.x.ai/v1/responses", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
         body: JSON.stringify({
           model: opts.model ?? "grok-4.6",
-          input: [...opts.sessionHistory ?? [], { role: "user", content: prompt }],
+          input: [...opts.sessionHistory ?? [], { role: "user", content: opts.prompt }],
           tools: [{ type: "web_search" }, { type: "x_search" }],
-          stream: false
+          stream: false,
+          store: false,
+          ...schema ? { text: { format: {
+            type: "json_schema",
+            name: "paf_response",
+            schema,
+            strict: true
+          } } } : {}
         }),
         signal: controller.signal
       });
+      let body;
+      try {
+        body = await resp.text();
+      } catch {
+        throw new XaiBackendError(`xAI response body could not be read (HTTP ${resp.status})`);
+      }
       if (!resp.ok) {
-        let detail = "";
-        try {
-          detail = await resp.text();
-        } catch {
-        }
-        detail = detail.split(key).join("[REDACTED]").slice(0, 200);
-        throw new XaiBackendError(`xAI returned HTTP ${resp.status}: ${detail}`);
+        throw new XaiBackendError(`xAI returned HTTP ${resp.status}: ${safeDetail(body, key)}`);
       }
       let data;
       try {
-        data = await resp.json();
+        data = JSON.parse(body);
       } catch {
         throw new XaiBackendError(`xAI returned invalid JSON (HTTP ${resp.status})`);
       }
-      const result = answer(object(data));
+      const result = answer(object(data), key);
       return result.text + (opts.schema ? "" : result.sources);
     } catch (err) {
       if (controller.signal.aborted || err instanceof Error && err.name === "AbortError") {
@@ -84069,10 +84090,6 @@ function printBackendLine(b) {
 }
 function printReport(report) {
   console.log("  Relay Backends:");
-  if (report.api?.length) {
-    console.log("    API:");
-    for (const b of report.api) printBackendLine(b);
-  }
   if (report.cli.length > 0) {
     console.log("    CLI:");
     for (const b of report.cli) printBackendLine(b);
@@ -84081,12 +84098,16 @@ function printReport(report) {
     console.log("    Local:");
     for (const b of report.local) printBackendLine(b);
   }
+  if (report.api.length) {
+    console.log("    API:");
+    for (const b of report.api) printBackendLine(b);
+  }
   console.log("");
   console.log("  Host Integrations:");
   for (const b of report.host) printBackendLine(b);
 }
 function getSelectableBackends(report) {
-  const allRelay = [...report.cli, ...report.local, ...report.api ?? []];
+  const allRelay = [...report.cli, ...report.local, ...report.api];
   return allRelay.filter((b) => b.available && !b.planned);
 }
 async function setup(opts) {
@@ -84111,7 +84132,7 @@ async function setup(opts) {
   if (selectable.length === 0) {
     console.log(theme.warning("  No relay backends available."));
     console.log("  Install at least one backend to get started:");
-    const allRelay = [...report.cli, ...report.local, ...report.api ?? []];
+    const allRelay = [...report.cli, ...report.local, ...report.api];
     for (const b of allRelay) {
       if (!b.planned && b.installHint) {
         console.log(`    ${b.name}: ${theme.hint(b.installHint)}`);
@@ -84782,7 +84803,7 @@ async function inspectExecutables(report, deps = {}) {
   }
 }
 function attachModelAndCapabilities(report, config) {
-  const entries = [...report.cli, ...report.local, ...report.api ?? [], ...report.host].filter((b) => !b.planned);
+  const entries = [...report.cli, ...report.local, ...report.api, ...report.host].filter((b) => !b.planned);
   for (const b of entries) {
     const configured = config.backends?.[b.name]?.model ?? config[b.name]?.model ?? null;
     b.model = {
@@ -84848,7 +84869,7 @@ function inspectPafIdentity(deps = {}) {
 
 // src/doctor.ts
 function countableBackends(report) {
-  return [...report.cli, ...report.local, ...report.api ?? []].filter((b) => {
+  return [...report.cli, ...report.local, ...report.api].filter((b) => {
     if (b.planned) return false;
     if (b.optional && !b.available) return false;
     return true;
@@ -84883,13 +84904,6 @@ function formatHumanReadable(report, config, paths, hostInstallations, advisorie
     lines.push("");
   }
   lines.push(`  ${theme.label("Relay Backends:")}`);
-  if (report.api?.length) {
-    lines.push("    API:");
-    for (const b of report.api) {
-      lines.push(`  ${formatBackendLine(b)}`);
-      lines.push(...formatDiagnosticLines(b));
-    }
-  }
   if (report.cli.length > 0) {
     lines.push("    CLI:");
     for (const b of report.cli) {
@@ -84906,9 +84920,16 @@ function formatHumanReadable(report, config, paths, hostInstallations, advisorie
       if (modelsLine) lines.push(modelsLine);
     }
   }
+  if (report.api.length) {
+    lines.push("    API:");
+    for (const b of report.api) {
+      lines.push(`  ${formatBackendLine(b)}`);
+      lines.push(...formatDiagnosticLines(b));
+    }
+  }
   lines.push("");
   const detailed = new Set(
-    [...report.cli, ...report.local, ...report.api ?? []].map((b) => b.executable?.command).filter(Boolean)
+    [...report.cli, ...report.local].map((b) => b.executable?.command).filter(Boolean)
   );
   lines.push(`  ${theme.label("Host Integrations:")}`);
   for (const b of report.host) {
@@ -84988,7 +85009,7 @@ function formatPafPathLines(paf) {
 function collectDiagnosticAdvisories(report, paf) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
-  for (const b of [...report.cli, ...report.local, ...report.api ?? [], ...report.host]) {
+  for (const b of [...report.cli, ...report.local, ...report.host]) {
     const exe = b.executable;
     if (!exe || seen.has(exe.command)) continue;
     seen.add(exe.command);
@@ -85022,7 +85043,7 @@ function formatJson(report, config, exitCode, hostInstallations, advisories = []
     backends: {
       cli: normalizeForJson(report.cli),
       local: normalizeForJson(report.local),
-      api: normalizeForJson(report.api ?? [])
+      api: normalizeForJson(report.api)
     },
     host: normalizeForJson(report.host),
     hostInstallations,

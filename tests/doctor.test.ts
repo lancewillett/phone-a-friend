@@ -54,6 +54,7 @@ vi.mock('../src/installer.js', () => ({
 // Helper: build a detection report
 function makeReport(overrides?: Partial<DetectionReport>): DetectionReport {
   return {
+    api: [],
     cli: [
       { name: 'antigravity', category: 'cli', available: false, detail: 'agy not found in PATH', installHint: 'curl -fsSL https://antigravity.google/cli/install.sh | bash', optional: true },
       { name: 'codex', category: 'cli', available: true, detail: 'OpenAI Codex CLI (found in PATH)', installHint: 'npm install -g @openai/codex' },
