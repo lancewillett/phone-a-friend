@@ -68,7 +68,7 @@ function isInPath(name, env5) {
 function checkBackends(whichFn = isInPath) {
   const result = {};
   for (const name of Object.keys(INSTALL_HINTS).sort()) {
-    result[name] = whichFn(BACKEND_COMMANDS[name] ?? name);
+    result[name] = name === "xai" ? !!process.env.XAI_API_KEY?.trim() : whichFn(BACKEND_COMMANDS[name] ?? name);
   }
   return result;
 }
@@ -169,6 +169,7 @@ var init_backends = __esm({
       codex: "npm install -g @openai/codex",
       gemini: "npm install -g @google/gemini-cli",
       ollama: "https://ollama.com/download",
+      xai: "Set XAI_API_KEY (https://console.x.ai)",
       claude: "npm install -g @anthropic-ai/claude-code",
       opencode: "curl -fsSL https://opencode.ai/install | bash"
     };
@@ -961,29 +962,29 @@ function stringifyInlineTable(obj, depth, numberAsFloat) {
   }
   return res + " }";
 }
-function stringifyArray(array, depth, numberAsFloat) {
-  if (array.length === 0)
+function stringifyArray(array2, depth, numberAsFloat) {
+  if (array2.length === 0)
     return "[]";
   let res = "[ ";
-  for (let i = 0; i < array.length; i++) {
+  for (let i = 0; i < array2.length; i++) {
     if (i)
       res += ", ";
-    if (array[i] === null || array[i] === void 0) {
+    if (array2[i] === null || array2[i] === void 0) {
       throw new TypeError("arrays cannot contain null or undefined values");
     }
-    res += stringifyValue(array[i], extendedTypeOf(array[i]), depth - 1, numberAsFloat);
+    res += stringifyValue(array2[i], extendedTypeOf(array2[i]), depth - 1, numberAsFloat);
   }
   return res + " ]";
 }
-function stringifyArrayTable(array, key, depth, numberAsFloat) {
+function stringifyArrayTable(array2, key, depth, numberAsFloat) {
   if (depth === 0) {
     throw new Error("Could not stringify the object: maximum object depth exceeded");
   }
   let res = "";
-  for (let i = 0; i < array.length; i++) {
+  for (let i = 0; i < array2.length; i++) {
     res += `${res && "\n"}[[${key}]]
 `;
-    res += stringifyTable(0, array[i], key, depth, numberAsFloat);
+    res += stringifyTable(0, array2[i], key, depth, numberAsFloat);
   }
   return res;
 }
@@ -5827,8 +5828,8 @@ var init_dist7 = __esm({
       });
       if (status === "done") {
         const selection = items.filter(isChecked);
-        const answer = theme2.style.answer(theme2.style.renderSelectedChoices(selection, items));
-        return [prefix, message, answer].filter(Boolean).join(" ");
+        const answer2 = theme2.style.answer(theme2.style.renderSelectedChoices(selection, items));
+        return [prefix, message, answer2].filter(Boolean).join(" ");
       }
       const keys = [
         ["\u2191\u2193", "navigate"],
@@ -15948,19 +15949,19 @@ var init_dist9 = __esm({
       async function startEditor(rl) {
         rl.pause();
         try {
-          const answer = await editAsync(value, { postfix, ...fileProps });
+          const answer2 = await editAsync(value, { postfix, ...fileProps });
           rl.resume();
           setStatus("loading");
-          const isValid = await validate2(answer);
+          const isValid = await validate2(answer2);
           if (isValid === true) {
             setError(void 0);
             setStatus("done");
-            done(answer);
+            done(answer2);
           } else {
             if (theme2.validationFailureMode === "clear") {
               setValue(config.default);
             } else {
-              setValue(answer);
+              setValue(answer2);
             }
             setError(isValid || "You must provide a valid value");
             setStatus("idle");
@@ -16049,15 +16050,15 @@ var init_dist10 = __esm({
         if (status !== "idle")
           return;
         if (isEnterKey(key)) {
-          const answer = getBooleanValue(value, config.default);
-          setValue(transformer(answer));
+          const answer2 = getBooleanValue(value, config.default);
+          setValue(transformer(answer2));
           setStatus("done");
-          done(answer);
+          done(answer2);
         } else if (isTabKey(key)) {
-          const answer = boolToString(!getBooleanValue(value, config.default));
+          const answer2 = boolToString(!getBooleanValue(value, config.default));
           rl.clearLine(0);
-          rl.write(answer);
-          setValue(answer);
+          rl.write(answer2);
+          setValue(answer2);
         } else {
           setValue(rl.line);
         }
@@ -16110,13 +16111,13 @@ var init_dist11 = __esm({
           return;
         }
         if (isEnterKey(key)) {
-          const answer = value || defaultValue2;
+          const answer2 = value || defaultValue2;
           setStatus("loading");
-          const isValid = await validate2(answer);
+          const isValid = await validate2(answer2);
           if (isValid === true) {
-            setValue(answer);
+            setValue(answer2);
             setStatus("done");
-            done(answer);
+            done(answer2);
           } else {
             if (theme2.validationFailureMode === "clear") {
               setValue("");
@@ -16228,19 +16229,19 @@ var init_dist12 = __esm({
         }
         if (isEnterKey(key)) {
           const input = value || defaultValue2;
-          const answer = input === "" ? void 0 : Number(input);
+          const answer2 = input === "" ? void 0 : Number(input);
           setStatus("loading");
           let isValid = true;
-          if (required || answer != null) {
-            isValid = validateNumber(answer, { min, max, step });
+          if (required || answer2 != null) {
+            isValid = validateNumber(answer2, { min, max, step });
           }
-          if (isValid === true && answer != null) {
-            isValid = await validate2(answer);
+          if (isValid === true && answer2 != null) {
+            isValid = await validate2(answer2);
           }
           if (isValid === true) {
-            setValue(String(answer ?? ""));
+            setValue(String(answer2 ?? ""));
             setStatus("done");
-            done(answer);
+            done(answer2);
           } else {
             rl.write(value);
             setError(isValid || "You must provide a valid numeric value");
@@ -16317,14 +16318,14 @@ var init_dist13 = __esm({
       const prefix = usePrefix({ theme: theme2, status });
       useKeypress((event, rl) => {
         if (isEnterKey(event)) {
-          const answer = (value || defaultKey).toLowerCase();
-          if (answer === "h" && !expanded) {
+          const answer2 = (value || defaultKey).toLowerCase();
+          if (answer2 === "h" && !expanded) {
             setExpanded(true);
           } else {
-            const selectedChoice = choices.find((choice) => !Separator.isSeparator(choice) && choice.key === answer);
+            const selectedChoice = choices.find((choice) => !Separator.isSeparator(choice) && choice.key === answer2);
             if (selectedChoice) {
               setStatus("done");
-              setValue(answer);
+              setValue(answer2);
               done(selectedChoice.value);
             } else if (value === "") {
               setError("Please input a value");
@@ -16419,8 +16420,8 @@ function getSelectedChoice(input, choices) {
   const selectableChoices = choices.filter(isSelectableChoice);
   selectedChoice = selectableChoices.find((choice) => choice.key === input);
   if (!selectedChoice && numberRegex.test(input)) {
-    const answer = Number.parseInt(input, 10) - 1;
-    selectedChoice = selectableChoices[answer];
+    const answer2 = Number.parseInt(input, 10) - 1;
+    selectedChoice = selectableChoices[answer2];
   }
   return selectedChoice ? [selectedChoice, choices.indexOf(selectedChoice)] : [void 0, void 0];
 }
@@ -16546,13 +16547,13 @@ var init_dist15 = __esm({
           return;
         }
         if (isEnterKey(key)) {
-          const answer = value;
+          const answer2 = value;
           setStatus("loading");
-          const isValid = await validate2(answer);
+          const isValid = await validate2(answer2);
           if (isValid === true) {
-            setValue(answer);
+            setValue(answer2);
             setStatus("done");
-            done(answer);
+            done(answer2);
           } else {
             rl.write(value);
             setError(isValid || "You must provide a valid value");
@@ -17136,6 +17137,17 @@ function decorateOpenCodeModels(report, whichFn = isInPath) {
     }
   }
 }
+function detectApiBackends(env5 = process.env) {
+  const available = !!env5.XAI_API_KEY?.trim();
+  return [{
+    name: "xai",
+    category: "api",
+    available,
+    optional: true,
+    detail: available ? "XAI_API_KEY set (not validated)" : "XAI_API_KEY not set",
+    installHint: INSTALL_HINTS.xai
+  }];
+}
 async function detectAll(whichFn = isInPath, fetchFn = globalThis.fetch) {
   const [cli, local, host] = await Promise.all([
     detectCliBackends(whichFn),
@@ -17143,7 +17155,7 @@ async function detectAll(whichFn = isInPath, fetchFn = globalThis.fetch) {
     detectHostIntegrations(whichFn)
   ]);
   const environment = detectEnvironment(whichFn);
-  return { cli, local, host, environment };
+  return { cli, local, api: detectApiBackends(), host, environment };
 }
 var CLI_BACKENDS, OLLAMA_DEFAULT_HOST, OLLAMA_INSTALL_HINT, HOST_INTEGRATIONS;
 var init_detection = __esm({
@@ -17255,8 +17267,8 @@ var require_react_production = __commonJS({
     function cloneAndReplaceKey(oldElement, newKey) {
       return ReactElement(oldElement.type, newKey, oldElement.props);
     }
-    function isValidElement(object) {
-      return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
+    function isValidElement(object2) {
+      return "object" === typeof object2 && null !== object2 && object2.$$typeof === REACT_ELEMENT_TYPE;
     }
     function escape3(key) {
       var escaperLookup = { "=": "=0", ":": "=2" };
@@ -17291,7 +17303,7 @@ var require_react_production = __commonJS({
       }
       throw thenable;
     }
-    function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+    function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
       var type = typeof children;
       if ("undefined" === type || "boolean" === type) children = null;
       var invokeCallback = false;
@@ -17312,7 +17324,7 @@ var require_react_production = __commonJS({
               case REACT_LAZY_TYPE:
                 return invokeCallback = children._init, mapIntoArray(
                   invokeCallback(children._payload),
-                  array,
+                  array2,
                   escapedPrefix,
                   nameSoFar,
                   callback
@@ -17320,7 +17332,7 @@ var require_react_production = __commonJS({
             }
         }
       if (invokeCallback)
-        return callback = callback(children), invokeCallback = "" === nameSoFar ? "." + getElementKey(children, 0) : nameSoFar, isArrayImpl(callback) ? (escapedPrefix = "", null != invokeCallback && (escapedPrefix = invokeCallback.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
+        return callback = callback(children), invokeCallback = "" === nameSoFar ? "." + getElementKey(children, 0) : nameSoFar, isArrayImpl(callback) ? (escapedPrefix = "", null != invokeCallback && (escapedPrefix = invokeCallback.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
           return c;
         })) : null != callback && (isValidElement(callback) && (callback = cloneAndReplaceKey(
           callback,
@@ -17328,14 +17340,14 @@ var require_react_production = __commonJS({
             userProvidedKeyEscapeRegex,
             "$&/"
           ) + "/") + invokeCallback
-        )), array.push(callback)), 1;
+        )), array2.push(callback)), 1;
       invokeCallback = 0;
       var nextNamePrefix = "" === nameSoFar ? "." : nameSoFar + ":";
       if (isArrayImpl(children))
         for (var i = 0; i < children.length; i++)
           nameSoFar = children[i], type = nextNamePrefix + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
             nameSoFar,
-            array,
+            array2,
             escapedPrefix,
             type,
             callback
@@ -17344,7 +17356,7 @@ var require_react_production = __commonJS({
         for (children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
           nameSoFar = nameSoFar.value, type = nextNamePrefix + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
             nameSoFar,
-            array,
+            array2,
             escapedPrefix,
             type,
             callback
@@ -17353,14 +17365,14 @@ var require_react_production = __commonJS({
         if ("function" === typeof children.then)
           return mapIntoArray(
             resolveThenable(children),
-            array,
+            array2,
             escapedPrefix,
             nameSoFar,
             callback
           );
-        array = String(children);
+        array2 = String(children);
         throw Error(
-          "Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead."
+          "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
         );
       }
       return invokeCallback;
@@ -17830,8 +17842,8 @@ var require_react_development = __commonJS({
       function validateChildKeys(node) {
         isValidElement(node) ? node._store && (node._store.validated = 1) : "object" === typeof node && null !== node && node.$$typeof === REACT_LAZY_TYPE && ("fulfilled" === node._payload.status ? isValidElement(node._payload.value) && node._payload.value._store && (node._payload.value._store.validated = 1) : node._store && (node._store.validated = 1));
       }
-      function isValidElement(object) {
-        return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
+      function isValidElement(object2) {
+        return "object" === typeof object2 && null !== object2 && object2.$$typeof === REACT_ELEMENT_TYPE;
       }
       function escape3(key) {
         var escaperLookup = { "=": "=0", ":": "=2" };
@@ -17865,7 +17877,7 @@ var require_react_development = __commonJS({
         }
         throw thenable;
       }
-      function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+      function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
         var type = typeof children;
         if ("undefined" === type || "boolean" === type) children = null;
         var invokeCallback = false;
@@ -17886,7 +17898,7 @@ var require_react_development = __commonJS({
                 case REACT_LAZY_TYPE:
                   return invokeCallback = children._init, mapIntoArray(
                     invokeCallback(children._payload),
-                    array,
+                    array2,
                     escapedPrefix,
                     nameSoFar,
                     callback
@@ -17897,7 +17909,7 @@ var require_react_development = __commonJS({
           invokeCallback = children;
           callback = callback(invokeCallback);
           var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
-          isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
+          isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
             return c;
           })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
             callback,
@@ -17905,7 +17917,7 @@ var require_react_development = __commonJS({
               userProvidedKeyEscapeRegex,
               "$&/"
             ) + "/") + childKey
-          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
+          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array2.push(callback));
           return 1;
         }
         invokeCallback = 0;
@@ -17914,7 +17926,7 @@ var require_react_development = __commonJS({
           for (var i = 0; i < children.length; i++)
             nameSoFar = children[i], type = childKey + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
               nameSoFar,
-              array,
+              array2,
               escapedPrefix,
               type,
               callback
@@ -17925,7 +17937,7 @@ var require_react_development = __commonJS({
           ), didWarnAboutMaps = true), children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
             nameSoFar = nameSoFar.value, type = childKey + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
               nameSoFar,
-              array,
+              array2,
               escapedPrefix,
               type,
               callback
@@ -17934,14 +17946,14 @@ var require_react_development = __commonJS({
           if ("function" === typeof children.then)
             return mapIntoArray(
               resolveThenable(children),
-              array,
+              array2,
               escapedPrefix,
               nameSoFar,
               callback
             );
-          array = String(children);
+          array2 = String(children);
           throw Error(
-            "Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead."
+            "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
           );
         }
         return invokeCallback;
@@ -18984,11 +18996,11 @@ function autoBind(self2, { include, exclude } = {}) {
     }
     return true;
   };
-  for (const [object, key] of getAllProperties(self2.constructor.prototype)) {
+  for (const [object2, key] of getAllProperties(self2.constructor.prototype)) {
     if (key === "constructor" || !filter(key)) {
       continue;
     }
-    const descriptor = Reflect.getOwnPropertyDescriptor(object, key);
+    const descriptor = Reflect.getOwnPropertyDescriptor(object2, key);
     if (descriptor && typeof descriptor.value === "function") {
       self2[key] = self2[key].bind(self2);
     }
@@ -18999,13 +19011,13 @@ var getAllProperties;
 var init_auto_bind = __esm({
   "node_modules/auto-bind/index.js"() {
     "use strict";
-    getAllProperties = (object) => {
+    getAllProperties = (object2) => {
       const properties = /* @__PURE__ */ new Set();
       do {
-        for (const key of Reflect.ownKeys(object)) {
-          properties.add([object, key]);
+        for (const key of Reflect.ownKeys(object2)) {
+          properties.add([object2, key]);
         }
-      } while ((object = Reflect.getPrototypeOf(object)) && object !== Object.prototype);
+      } while ((object2 = Reflect.getPrototypeOf(object2)) && object2 !== Object.prototype);
       return properties;
     };
   }
@@ -24146,8 +24158,8 @@ var require_react_reconciler_production = __commonJS({
         if (null == memoCache) {
           var current = currentlyRenderingFiber.alternate;
           null !== current && (current = current.updateQueue, null !== current && (current = current.memoCache, null != current && (memoCache = {
-            data: current.data.map(function(array) {
-              return array.slice();
+            data: current.data.map(function(array2) {
+              return array2.slice();
             }),
             index: 0
           })));
@@ -30353,11 +30365,11 @@ var require_react_reconciler_development = __commonJS({
       function warnForMissingKey() {
       }
       function setToSortedString(set) {
-        var array = [];
+        var array2 = [];
         set.forEach(function(value) {
-          array.push(value);
+          array2.push(value);
         });
-        return array.sort().join(", ");
+        return array2.sort().join(", ");
       }
       function getNearestMountedFiber(fiber) {
         var node = fiber, nearestMounted = fiber;
@@ -30870,9 +30882,9 @@ var require_react_reconciler_development = __commonJS({
       function is(x, y) {
         return x === y && (0 !== x || 1 / x === 1 / y) || x !== x && y !== y;
       }
-      function getArrayKind(array) {
-        for (var kind = 0, i = 0; i < array.length; i++) {
-          var value = array[i];
+      function getArrayKind(array2) {
+        for (var kind = 0, i = 0; i < array2.length; i++) {
+          var value = array2[i];
           if ("object" === typeof value && null !== value)
             if (isArrayImpl(value) && 2 === value.length && "string" === typeof value[0]) {
               if (0 !== kind && 3 !== kind) return 1;
@@ -30886,9 +30898,9 @@ var require_react_reconciler_development = __commonJS({
         }
         return kind;
       }
-      function addObjectToProperties(object, properties, indent, prefix2) {
-        for (var key in object)
-          hasOwnProperty.call(object, key) && "_" !== key[0] && addValueToProperties(key, object[key], properties, indent, prefix2);
+      function addObjectToProperties(object2, properties, indent, prefix2) {
+        for (var key in object2)
+          hasOwnProperty.call(object2, key) && "_" !== key[0] && addValueToProperties(key, object2[key], properties, indent, prefix2);
       }
       function addValueToProperties(propertyName, value, properties, indent, prefix2) {
         switch (typeof value) {
@@ -31806,8 +31818,8 @@ var require_react_reconciler_development = __commonJS({
         }
         return indentation(indent) + describeTextNode(clientText, maxLength) + "\n";
       }
-      function objectName(object) {
-        return Object.prototype.toString.call(object).replace(/^\[object (.*)\]$/, function(m, p0) {
+      function objectName(object2) {
+        return Object.prototype.toString.call(object2).replace(/^\[object (.*)\]$/, function(m, p0) {
           return p0;
         });
       }
@@ -34219,8 +34231,8 @@ var require_react_reconciler_development = __commonJS({
         if (null == memoCache) {
           var current2 = currentlyRenderingFiber.alternate;
           null !== current2 && (current2 = current2.updateQueue, null !== current2 && (current2 = current2.memoCache, null != current2 && (memoCache = {
-            data: current2.data.map(function(array) {
-              return array.slice();
+            data: current2.data.map(function(array2) {
+              return array2.slice();
             }),
             index: 0
           })));
@@ -50430,8 +50442,8 @@ var require_backend = __commonJS({
                 function cloneAndReplaceKey(oldElement, newKey) {
                   return ReactElement(oldElement.type, newKey, oldElement.props);
                 }
-                function isValidElement(object) {
-                  return "object" === _typeof(object) && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
+                function isValidElement(object2) {
+                  return "object" === _typeof(object2) && null !== object2 && object2.$$typeof === REACT_ELEMENT_TYPE;
                 }
                 function escape3(key) {
                   var escaperLookup = {
@@ -50466,7 +50478,7 @@ var require_backend = __commonJS({
                   }
                   throw thenable;
                 }
-                function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+                function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
                   var type = _typeof(children);
                   if ("undefined" === type || "boolean" === type) children = null;
                   var invokeCallback = false;
@@ -50484,20 +50496,20 @@ var require_backend = __commonJS({
                           invokeCallback = true;
                           break;
                         case REACT_LAZY_TYPE:
-                          return invokeCallback = children._init, mapIntoArray(invokeCallback(children._payload), array, escapedPrefix, nameSoFar, callback);
+                          return invokeCallback = children._init, mapIntoArray(invokeCallback(children._payload), array2, escapedPrefix, nameSoFar, callback);
                       }
                   }
-                  if (invokeCallback) return callback = callback(children), invokeCallback = "" === nameSoFar ? "." + getElementKey(children, 0) : nameSoFar, isArrayImpl(callback) ? (escapedPrefix = "", null != invokeCallback && (escapedPrefix = invokeCallback.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
+                  if (invokeCallback) return callback = callback(children), invokeCallback = "" === nameSoFar ? "." + getElementKey(children, 0) : nameSoFar, isArrayImpl(callback) ? (escapedPrefix = "", null != invokeCallback && (escapedPrefix = invokeCallback.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
                     return c;
-                  })) : null != callback && (isValidElement(callback) && (callback = cloneAndReplaceKey(callback, escapedPrefix + (null == callback.key || children && children.key === callback.key ? "" : ("" + callback.key).replace(userProvidedKeyEscapeRegex, "$&/") + "/") + invokeCallback)), array.push(callback)), 1;
+                  })) : null != callback && (isValidElement(callback) && (callback = cloneAndReplaceKey(callback, escapedPrefix + (null == callback.key || children && children.key === callback.key ? "" : ("" + callback.key).replace(userProvidedKeyEscapeRegex, "$&/") + "/") + invokeCallback)), array2.push(callback)), 1;
                   invokeCallback = 0;
                   var nextNamePrefix = "" === nameSoFar ? "." : nameSoFar + ":";
-                  if (isArrayImpl(children)) for (var i = 0; i < children.length; i++) nameSoFar = children[i], type = nextNamePrefix + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(nameSoFar, array, escapedPrefix, type, callback);
-                  else if (i = getIteratorFn(children), "function" === typeof i) for (children = i.call(children), i = 0; !(nameSoFar = children.next()).done; ) nameSoFar = nameSoFar.value, type = nextNamePrefix + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(nameSoFar, array, escapedPrefix, type, callback);
+                  if (isArrayImpl(children)) for (var i = 0; i < children.length; i++) nameSoFar = children[i], type = nextNamePrefix + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(nameSoFar, array2, escapedPrefix, type, callback);
+                  else if (i = getIteratorFn(children), "function" === typeof i) for (children = i.call(children), i = 0; !(nameSoFar = children.next()).done; ) nameSoFar = nameSoFar.value, type = nextNamePrefix + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(nameSoFar, array2, escapedPrefix, type, callback);
                   else if ("object" === type) {
-                    if ("function" === typeof children.then) return mapIntoArray(resolveThenable(children), array, escapedPrefix, nameSoFar, callback);
-                    array = String(children);
-                    throw Error("Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead.");
+                    if ("function" === typeof children.then) return mapIntoArray(resolveThenable(children), array2, escapedPrefix, nameSoFar, callback);
+                    array2 = String(children);
+                    throw Error("Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead.");
                   }
                   return invokeCallback;
                 }
@@ -51425,9 +51437,9 @@ var require_backend = __commonJS({
                     runTimeout(drainQueue);
                   }
                 };
-                function Item(fun, array) {
+                function Item(fun, array2) {
                   this.fun = fun;
-                  this.array = array;
+                  this.array = array2;
                 }
                 Item.prototype.run = function() {
                   this.fun.apply(null, this.array);
@@ -52940,10 +52952,10 @@ var require_backend = __commonJS({
             function getUID() {
               return ++uidCounter;
             }
-            function utfDecodeStringWithRanges(array, left, right) {
+            function utfDecodeStringWithRanges(array2, left, right) {
               var string = "";
               for (var i = left; i <= right; i++) {
-                string += String.fromCodePoint(array[i]);
+                string += String.fromCodePoint(array2[i]);
               }
               return string;
             }
@@ -53256,7 +53268,7 @@ var require_backend = __commonJS({
               }
               return false;
             }
-            function utils_getInObject(object, path4) {
+            function utils_getInObject(object2, path4) {
               return path4.reduce(function(reduced, attr) {
                 if (reduced) {
                   if (utils_hasOwnProperty.call(reduced, attr)) {
@@ -53267,13 +53279,13 @@ var require_backend = __commonJS({
                   }
                 }
                 return null;
-              }, object);
+              }, object2);
             }
-            function deletePathInObject(object, path4) {
+            function deletePathInObject(object2, path4) {
               var length = path4.length;
               var last = path4[length - 1];
-              if (object != null) {
-                var parent = utils_getInObject(object, path4.slice(0, length - 1));
+              if (object2 != null) {
+                var parent = utils_getInObject(object2, path4.slice(0, length - 1));
                 if (parent) {
                   if (src_isArray(parent)) {
                     parent.splice(last, 1);
@@ -53283,10 +53295,10 @@ var require_backend = __commonJS({
                 }
               }
             }
-            function renamePathInObject(object, oldPath, newPath) {
+            function renamePathInObject(object2, oldPath, newPath) {
               var length = oldPath.length;
-              if (object != null) {
-                var parent = utils_getInObject(object, oldPath.slice(0, length - 1));
+              if (object2 != null) {
+                var parent = utils_getInObject(object2, oldPath.slice(0, length - 1));
                 if (parent) {
                   var lastOld = oldPath[length - 1];
                   var lastNew = newPath[length - 1];
@@ -53299,11 +53311,11 @@ var require_backend = __commonJS({
                 }
               }
             }
-            function utils_setInObject(object, path4, value) {
+            function utils_setInObject(object2, path4, value) {
               var length = path4.length;
               var last = path4[length - 1];
-              if (object != null) {
-                var parent = utils_getInObject(object, path4.slice(0, length - 1));
+              if (object2 != null) {
+                var parent = utils_getInObject(object2, path4.slice(0, length - 1));
                 if (parent) {
                   parent[last] = value;
                 }
@@ -53396,13 +53408,13 @@ var require_backend = __commonJS({
                   return "unknown";
               }
             }
-            function typeOfWithLegacyElementSymbol(object) {
-              if (utils_typeof(object) === "object" && object !== null) {
-                var $$typeof = object.$$typeof;
+            function typeOfWithLegacyElementSymbol(object2) {
+              if (utils_typeof(object2) === "object" && object2 !== null) {
+                var $$typeof = object2.$$typeof;
                 switch ($$typeof) {
                   case REACT_ELEMENT_TYPE:
                   case REACT_LEGACY_ELEMENT_TYPE:
-                    var type = object.type;
+                    var type = object2.type;
                     switch (type) {
                       case REACT_FRAGMENT_TYPE:
                       case REACT_PROFILER_TYPE:
@@ -53591,10 +53603,10 @@ var require_backend = __commonJS({
                 case "iterator":
                   var name = data.constructor.name;
                   if (showFormattedValue) {
-                    var array = Array.from(data);
+                    var array2 = Array.from(data);
                     var _formatted6 = "";
-                    for (var _i2 = 0; _i2 < array.length; _i2++) {
-                      var entryOrEntries = array[_i2];
+                    for (var _i2 = 0; _i2 < array2.length; _i2++) {
+                      var entryOrEntries = array2[_i2];
                       if (_i2 > 0) {
                         _formatted6 += ", ";
                       }
@@ -53706,8 +53718,8 @@ var require_backend = __commonJS({
                   }
               }
             }
-            var isPlainObject2 = function isPlainObject3(object) {
-              var objectPrototype = Object.getPrototypeOf(object);
+            var isPlainObject2 = function isPlainObject3(object2) {
+              var objectPrototype = Object.getPrototypeOf(object2);
               if (!objectPrototype) return true;
               var objectParentPrototype = Object.getPrototypeOf(objectPrototype);
               return !objectParentPrototype;
@@ -54081,12 +54093,12 @@ var require_backend = __commonJS({
                   if (level >= LEVEL_THRESHOLD && !isPathAllowedCheck) {
                     return createDehydrated(type, true, data, cleaned, path4);
                   } else {
-                    var object = {};
+                    var object2 = {};
                     getAllEnumerableKeys(data).forEach(function(key) {
                       var name = key.toString();
-                      object[name] = dehydrateKey(data, key, cleaned, unserializable, path4.concat([name]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
+                      object2[name] = dehydrateKey(data, key, cleaned, unserializable, path4.concat([name]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
                     });
-                    return object;
+                    return object2;
                   }
                 case "class_instance": {
                   isPathAllowedCheck = isPathAllowed(path4);
@@ -54165,8 +54177,8 @@ var require_backend = __commonJS({
                 };
               }
             }
-            function fillInPath(object, data, path4, value) {
-              var target = getInObject(object, path4);
+            function fillInPath(object2, data, path4, value) {
+              var target = getInObject(object2, path4);
               if (target != null) {
                 if (!target[meta.unserializable]) {
                   delete target[meta.inspectable];
@@ -54192,13 +54204,13 @@ var require_backend = __commonJS({
                   upgradeUnserializable(value, value);
                 }
               }
-              setInObject(object, path4, value);
+              setInObject(object2, path4, value);
             }
-            function hydrate(object, cleaned, unserializable) {
+            function hydrate(object2, cleaned, unserializable) {
               cleaned.forEach(function(path4) {
                 var length = path4.length;
                 var last = path4[length - 1];
-                var parent = getInObject(object, path4.slice(0, length - 1));
+                var parent = getInObject(object2, path4.slice(0, length - 1));
                 if (!parent || !parent.hasOwnProperty(last)) {
                   return;
                 }
@@ -54227,7 +54239,7 @@ var require_backend = __commonJS({
               unserializable.forEach(function(path4) {
                 var length = path4.length;
                 var last = path4[length - 1];
-                var parent = getInObject(object, path4.slice(0, length - 1));
+                var parent = getInObject(object2, path4.slice(0, length - 1));
                 if (!parent || !parent.hasOwnProperty(last)) {
                   return;
                 }
@@ -54236,7 +54248,7 @@ var require_backend = __commonJS({
                 upgradeUnserializable(replacement, node);
                 parent[last] = replacement;
               });
-              return object;
+              return object2;
             }
             function upgradeUnserializable(destination, source) {
               Object.defineProperties(destination, hydration_defineProperty(hydration_defineProperty(hydration_defineProperty(hydration_defineProperty(hydration_defineProperty(hydration_defineProperty(hydration_defineProperty(hydration_defineProperty({}, meta.inspected, {
@@ -58950,8 +58962,8 @@ var require_backend = __commonJS({
               }, renderer_typeof(o);
             }
             var renderer_toString = Object.prototype.toString;
-            function renderer_isError(object) {
-              return renderer_toString.call(object) === "[object Error]";
+            function renderer_isError(object2) {
+              return renderer_toString.call(object2) === "[object Error]";
             }
             var FIBER_INSTANCE = 0;
             var VIRTUAL_INSTANCE = 1;
@@ -64179,9 +64191,9 @@ var require_backend = __commonJS({
               }, internalMcpFunctions);
             }
             ;
-            function decorate(object, attr, fn) {
-              var old = object[attr];
-              object[attr] = function(instance) {
+            function decorate(object2, attr, fn) {
+              var old = object2[attr];
+              object2[attr] = function(instance) {
                 return fn.call(this, old, arguments);
               };
               return old;
@@ -65979,10 +65991,10 @@ var require_backend = __commonJS({
                 });
               });
             }
-            function shallowClone(object) {
+            function shallowClone(object2) {
               var cloned = {};
-              for (var n in object) {
-                cloned[n] = object[n];
+              for (var n in object2) {
+                cloned[n] = object2[n];
               }
               return cloned;
             }
@@ -67206,12 +67218,12 @@ var init_source = __esm({
       "ansi16m"
     ];
     styles8 = /* @__PURE__ */ Object.create(null);
-    applyOptions3 = (object, options = {}) => {
+    applyOptions3 = (object2, options = {}) => {
       if (options.level && !(Number.isInteger(options.level) && options.level >= 0 && options.level <= 3)) {
         throw new Error("The `level` option should be an integer from 0 to 3");
       }
       const colorLevel = stdoutColor3 ? stdoutColor3.level : 0;
-      object.level = options.level === void 0 ? colorLevel : options.level;
+      object2.level = options.level === void 0 ? colorLevel : options.level;
     };
     chalkFactory3 = (options) => {
       const chalk4 = (...strings) => strings.join(" ");
@@ -72012,8 +72024,8 @@ var require_react_jsx_runtime_development = __commonJS({
       function validateChildKeys(node) {
         isValidElement(node) ? node._store && (node._store.validated = 1) : "object" === typeof node && null !== node && node.$$typeof === REACT_LAZY_TYPE && ("fulfilled" === node._payload.status ? isValidElement(node._payload.value) && node._payload.value._store && (node._payload.value._store.validated = 1) : node._store && (node._store.validated = 1));
       }
-      function isValidElement(object) {
-        return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
+      function isValidElement(object2) {
+        return "object" === typeof object2 && null !== object2 && object2.$$typeof === REACT_ELEMENT_TYPE;
       }
       var React17 = require_react(), REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy"), REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity"), REACT_CLIENT_REFERENCE = /* @__PURE__ */ Symbol.for("react.client.reference"), ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, hasOwnProperty = Object.prototype.hasOwnProperty, isArrayImpl = Array.isArray, createTask = console.createTask ? console.createTask : function() {
         return null;
@@ -72225,7 +72237,7 @@ function StatusPanel({ report, loading, refreshing, error: error2, pluginInstall
     }
     return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Box_default, { flexDirection: "column", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Text, { color: "cyan", children: "Scanning backends..." }) });
   }
-  const allRelay = [...report.cli, ...report.local];
+  const allRelay = [...report.cli, ...report.local, ...report.api ?? []];
   const countable = allRelay.filter((b) => !b.planned && !(b.optional && !b.available));
   const available = countable.filter((b) => b.available).length;
   const total = countable.length;
@@ -72274,7 +72286,8 @@ function StatusPanel({ report, loading, refreshing, error: error2, pluginInstall
         " ready)"
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "CLI", backends: report.cli }),
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "Local", backends: report.local })
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "Local", backends: report.local }),
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(CategorySection, { label: "API", backends: report.api ?? [] })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(Box_default, { flexDirection: "column", children: [
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Text, { bold: true, underline: true, children: "Host Integrations" }),
@@ -72474,7 +72487,7 @@ function BackendsPanel({ report, onEditingChange }) {
   const [modelSelectedIndex, setModelSelectedIndex] = (0, import_react35.useState)(0);
   const [config, setConfig] = (0, import_react35.useState)(() => loadConfig());
   const [saveMessage, setSaveMessage] = (0, import_react35.useState)(null);
-  const allBackendsForClamp = report ? [...report.cli, ...report.local, ...report.host] : [];
+  const allBackendsForClamp = report ? [...report.cli, ...report.local, ...report.api ?? [], ...report.host] : [];
   const currentModels = allBackendsForClamp[selectedIndex]?.models ?? [];
   (0, import_react35.useEffect)(() => {
     if (mode === "modelSelect" && currentModels.length > 0 && modelSelectedIndex >= currentModels.length) {
@@ -72525,7 +72538,7 @@ function BackendsPanel({ report, onEditingChange }) {
   use_input_default((input, key) => {
     if (mode === "modelSelect") {
       if (key.return) {
-        const allBackends2 = report ? [...report.cli, ...report.local, ...report.host] : [];
+        const allBackends2 = report ? [...report.cli, ...report.local, ...report.api ?? [], ...report.host] : [];
         const selected2 = allBackends2[selectedIndex];
         const models = selected2?.models ?? [];
         const model = models[modelSelectedIndex];
@@ -72539,7 +72552,7 @@ function BackendsPanel({ report, onEditingChange }) {
       return;
     }
     if (key.return) {
-      const allBackends2 = report ? [...report.cli, ...report.local, ...report.host] : [];
+      const allBackends2 = report ? [...report.cli, ...report.local, ...report.api ?? [], ...report.host] : [];
       const selected2 = allBackends2[selectedIndex];
       if (selected2 && (selected2.models?.length ?? 0) > 0) {
         enterModelSelect(selected2.name, selected2.models);
@@ -72552,6 +72565,7 @@ function BackendsPanel({ report, onEditingChange }) {
   const allBackends = [
     ...report.cli,
     ...report.local,
+    ...report.api ?? [],
     ...report.host
   ];
   const selected = allBackends[selectedIndex];
@@ -72800,7 +72814,7 @@ import { dirname as dirname10 } from "path";
 function formatBackendSummary(report) {
   const lines = [];
   const mark2 = (b) => b.available ? "\u2713" : "\u2717";
-  const relay2 = [...report.cli, ...report.local];
+  const relay2 = [...report.cli, ...report.local, ...report.api ?? []];
   const ready = relay2.filter((b) => b.available && !b.planned).length;
   const total = relay2.filter((b) => !b.planned && !(b.optional && !b.available)).length;
   lines.push(`Backend re-scan complete \u2014 ${ready} of ${total} relay backends ready`);
@@ -75161,7 +75175,7 @@ function isCodexHostEnv(env5) {
 function assertNotCodexHost(env5) {
   if (!isCodexHostEnv(env5)) return;
   throw new CodexBackendError(
-    "Codex is already the host for this Phone-a-Friend invocation. Choose another friend backend such as antigravity, claude, gemini, opencode, or ollama."
+    "Codex is already the host for this Phone-a-Friend invocation. Choose another friend backend such as antigravity, claude, gemini, opencode, ollama, or xai."
   );
 }
 var CodexBackend = class {
@@ -76404,6 +76418,110 @@ function isJsonObject(value) {
 var OLLAMA_BACKEND = new OllamaBackend();
 registerBackend(OLLAMA_BACKEND);
 
+// src/backends/xai.ts
+init_backends();
+var XaiBackendError = class extends BackendError {
+  constructor(message) {
+    super(message);
+    this.name = "XaiBackendError";
+  }
+};
+function object(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+function array(value) {
+  return Array.isArray(value) ? value : [];
+}
+function answer(response) {
+  if (response.status !== "completed" || response.error != null) {
+    throw new XaiBackendError("xAI response failed");
+  }
+  const parts = [];
+  const urls = /* @__PURE__ */ new Set();
+  for (const item of array(response.output).map(object)) {
+    if (item.type !== "message") continue;
+    for (const part of array(item.content).map(object)) {
+      if (part.type !== "output_text" || typeof part.text !== "string") continue;
+      parts.push(part.text);
+      for (const annotation of array(part.annotations).map(object)) {
+        if (annotation.type === "url_citation" && typeof annotation.url === "string") {
+          urls.add(annotation.url);
+        }
+      }
+    }
+  }
+  const text = parts.join("\n").trim();
+  if (!text) throw new XaiBackendError("xAI completed without producing output");
+  return { text, sources: urls.size ? `
+
+Sources:
+${[...urls].map((url) => `- ${url}`).join("\n")}` : "" };
+}
+var XaiBackend = class {
+  name = "xai";
+  localFileAccess = false;
+  capabilities = {
+    resumeStrategy: "transcript-replay",
+    requiresClientSessionId: false
+  };
+  // Sandbox modes are a no-op: this backend has no local tools.
+  allowedSandboxes = /* @__PURE__ */ new Set([
+    "read-only",
+    "workspace-write",
+    "danger-full-access"
+  ]);
+  async run(opts) {
+    const key = opts.env.XAI_API_KEY?.trim();
+    if (!key) throw new XaiBackendError("Set XAI_API_KEY to use xai. Get an API key at https://console.x.ai");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), opts.timeoutSeconds * 1e3);
+    try {
+      const prompt = opts.schema ? `${opts.prompt}
+
+Respond with JSON only. The response must match this JSON Schema exactly:
+${opts.schema}` : opts.prompt;
+      const resp = await fetch("https://api.x.ai/v1/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({
+          model: opts.model ?? "grok-4.6",
+          input: [...opts.sessionHistory ?? [], { role: "user", content: prompt }],
+          tools: [{ type: "web_search" }, { type: "x_search" }],
+          stream: false
+        }),
+        signal: controller.signal
+      });
+      if (!resp.ok) {
+        let detail = "";
+        try {
+          detail = await resp.text();
+        } catch {
+        }
+        detail = detail.split(key).join("[REDACTED]").slice(0, 200);
+        throw new XaiBackendError(`xAI returned HTTP ${resp.status}: ${detail}`);
+      }
+      let data;
+      try {
+        data = await resp.json();
+      } catch {
+        throw new XaiBackendError(`xAI returned invalid JSON (HTTP ${resp.status})`);
+      }
+      const result = answer(object(data));
+      return result.text + (opts.schema ? "" : result.sources);
+    } catch (err) {
+      if (controller.signal.aborted || err instanceof Error && err.name === "AbortError") {
+        throw new XaiBackendError(`xAI timed out after ${opts.timeoutSeconds}s`);
+      }
+      if (err instanceof XaiBackendError) throw err;
+      throw new XaiBackendError("xAI request failed");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+};
+var XAI_BACKEND = new XaiBackend();
+registerBackend(XAI_BACKEND);
+
 // src/backends/claude.ts
 init_backends();
 import { execFileSync as execFileSync2, spawn } from "child_process";
@@ -76717,7 +76835,7 @@ function isOpenCodeHostEnv(env5) {
 function assertNotOpenCodeHost(env5) {
   if (!isOpenCodeHostEnv(env5)) return;
   throw new OpenCodeBackendError(
-    "OpenCode is already the host for this Phone-a-Friend invocation. Choose another friend backend such as antigravity, codex, gemini, claude, or ollama."
+    "OpenCode is already the host for this Phone-a-Friend invocation. Choose another friend backend such as antigravity, codex, gemini, claude, ollama, or xai."
   );
 }
 function buildOpenCodeArgs(opts) {
@@ -80712,12 +80830,12 @@ var levelMapping = [
   "ansi16m"
 ];
 var styles2 = /* @__PURE__ */ Object.create(null);
-var applyOptions = (object, options = {}) => {
+var applyOptions = (object2, options = {}) => {
   if (options.level && !(Number.isInteger(options.level) && options.level >= 0 && options.level <= 3)) {
     throw new Error("The `level` option should be an integer from 0 to 3");
   }
   const colorLevel = stdoutColor ? stdoutColor.level : 0;
-  object.level = options.level === void 0 ? colorLevel : options.level;
+  object2.level = options.level === void 0 ? colorLevel : options.level;
 };
 var chalkFactory = (options) => {
   const chalk4 = (...strings) => strings.join(" ");
@@ -83727,12 +83845,12 @@ var levelDescriptor = {
     this[LEVEL] = level;
   }
 };
-var applyOptions2 = (object, options = {}) => {
+var applyOptions2 = (object2, options = {}) => {
   if (options.level !== void 0) {
     assertValidLevel(options.level);
   }
   const colorLevel = stdoutColor2 ? stdoutColor2.level : 0;
-  object[LEVEL] = options.level === void 0 ? colorLevel : options.level;
+  object2[LEVEL] = options.level === void 0 ? colorLevel : options.level;
 };
 var chalkFactory2 = (options) => {
   const chalk4 = (...strings) => strings.join(" ");
@@ -83951,6 +84069,10 @@ function printBackendLine(b) {
 }
 function printReport(report) {
   console.log("  Relay Backends:");
+  if (report.api?.length) {
+    console.log("    API:");
+    for (const b of report.api) printBackendLine(b);
+  }
   if (report.cli.length > 0) {
     console.log("    CLI:");
     for (const b of report.cli) printBackendLine(b);
@@ -83964,7 +84086,7 @@ function printReport(report) {
   for (const b of report.host) printBackendLine(b);
 }
 function getSelectableBackends(report) {
-  const allRelay = [...report.cli, ...report.local];
+  const allRelay = [...report.cli, ...report.local, ...report.api ?? []];
   return allRelay.filter((b) => b.available && !b.planned);
 }
 async function setup(opts) {
@@ -83989,7 +84111,7 @@ async function setup(opts) {
   if (selectable.length === 0) {
     console.log(theme.warning("  No relay backends available."));
     console.log("  Install at least one backend to get started:");
-    const allRelay = [...report.cli, ...report.local];
+    const allRelay = [...report.cli, ...report.local, ...report.api ?? []];
     for (const b of allRelay) {
       if (!b.planned && b.installHint) {
         console.log(`    ${b.name}: ${theme.hint(b.installHint)}`);
@@ -84660,7 +84782,7 @@ async function inspectExecutables(report, deps = {}) {
   }
 }
 function attachModelAndCapabilities(report, config) {
-  const entries = [...report.cli, ...report.local, ...report.host].filter((b) => !b.planned);
+  const entries = [...report.cli, ...report.local, ...report.api ?? [], ...report.host].filter((b) => !b.planned);
   for (const b of entries) {
     const configured = config.backends?.[b.name]?.model ?? config[b.name]?.model ?? null;
     b.model = {
@@ -84726,7 +84848,7 @@ function inspectPafIdentity(deps = {}) {
 
 // src/doctor.ts
 function countableBackends(report) {
-  return [...report.cli, ...report.local].filter((b) => {
+  return [...report.cli, ...report.local, ...report.api ?? []].filter((b) => {
     if (b.planned) return false;
     if (b.optional && !b.available) return false;
     return true;
@@ -84761,6 +84883,13 @@ function formatHumanReadable(report, config, paths, hostInstallations, advisorie
     lines.push("");
   }
   lines.push(`  ${theme.label("Relay Backends:")}`);
+  if (report.api?.length) {
+    lines.push("    API:");
+    for (const b of report.api) {
+      lines.push(`  ${formatBackendLine(b)}`);
+      lines.push(...formatDiagnosticLines(b));
+    }
+  }
   if (report.cli.length > 0) {
     lines.push("    CLI:");
     for (const b of report.cli) {
@@ -84779,7 +84908,7 @@ function formatHumanReadable(report, config, paths, hostInstallations, advisorie
   }
   lines.push("");
   const detailed = new Set(
-    [...report.cli, ...report.local].map((b) => b.executable?.command).filter(Boolean)
+    [...report.cli, ...report.local, ...report.api ?? []].map((b) => b.executable?.command).filter(Boolean)
   );
   lines.push(`  ${theme.label("Host Integrations:")}`);
   for (const b of report.host) {
@@ -84830,7 +84959,7 @@ function formatDiagnosticLines(b) {
       lines.push(`${DIAG_INDENT}${theme.hint("also on PATH:")} ${others}${flag}`);
     }
   }
-  if (b.model && (exe?.selected || b.name === "ollama")) {
+  if (b.model && (exe?.selected || b.name === "ollama" || b.category === "api")) {
     const requested = b.model.requested ? `${b.model.requested} (from PaF config)` : "backend default";
     lines.push(
       `${DIAG_INDENT}${theme.hint("model:")} requested=${requested}, reported=unknown ${theme.hint("(doctor runs no backend)")}`
@@ -84859,7 +84988,7 @@ function formatPafPathLines(paf) {
 function collectDiagnosticAdvisories(report, paf) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
-  for (const b of [...report.cli, ...report.local, ...report.host]) {
+  for (const b of [...report.cli, ...report.local, ...report.api ?? [], ...report.host]) {
     const exe = b.executable;
     if (!exe || seen.has(exe.command)) continue;
     seen.add(exe.command);
@@ -84892,7 +85021,8 @@ function formatJson(report, config, exitCode, hostInstallations, advisories = []
     },
     backends: {
       cli: normalizeForJson(report.cli),
-      local: normalizeForJson(report.local)
+      local: normalizeForJson(report.local),
+      api: normalizeForJson(report.api ?? [])
     },
     host: normalizeForJson(report.host),
     hostInstallations,
@@ -85621,7 +85751,7 @@ ${banner("AI coding agent relay")}
       writeOut: (str) => console.log(str.trimEnd()),
       writeErr: (str) => console.error(str.trimEnd())
     }).exitOverride();
-    program2.command("relay").description("Relay prompt/context to a coding backend (default)").option("--prompt <text>", "Prompt to relay (required unless review mode is selected)").option("--to <backend>", "Target backend: antigravity, codex, gemini, ollama, claude, opencode").option("--repo <path>", "Repository path", process.cwd()).option("--context-file <path>", "File with additional context").option("--context-text <text>", "Inline context text").option("--include-diff", "Append git diff to prompt").option("--no-include-diff", "Do not append git diff (overrides config defaults.include_diff)").option("--timeout <seconds>", "Max runtime in seconds").option("--model <name>", "Model override").option("--sandbox <mode>", "Sandbox: read-only, workspace-write, danger-full-access").option("--peer-messaging <mode>", "Claude peer messaging: native, accept, refuse").option("--schema <json>", "Request structured JSON output matching this schema").option("--session <id>", "Resume or create a persisted relay session (PaF label)").option("--backend-session <id>", "Attach to a raw backend session/thread ID (bypasses PaF label store; combine with --session to adopt it)").option("--fast", "Use fast mode when supported (maps to --pure for OpenCode; no-op elsewhere)").option("--stream", "Stream tokens as they arrive (default)").option("--no-stream", "Disable streaming output (get full response at once)").option("--review", "Use review mode (default scope: branch)").option("--review-scope <scope>", "Review scope: branch, working-tree, all").option("--base <branch>", "Base branch for review diff (default: auto-detect main/master)").option("--verdict-json", "Review with opinionated verdict envelope (implies --review). Outputs compact JSON with verdict/findings/summary.").option("--quiet", "Run silently, save result to job store").option("--no-task-history", "Do not record this run in the local task store").action(async (opts, command) => {
+    program2.command("relay").description("Relay prompt/context to a coding backend (default)").option("--prompt <text>", "Prompt to relay (required unless review mode is selected)").option("--to <backend>", "Target backend: antigravity, codex, gemini, ollama, claude, opencode, xai").option("--repo <path>", "Repository path", process.cwd()).option("--context-file <path>", "File with additional context").option("--context-text <text>", "Inline context text").option("--include-diff", "Append git diff to prompt").option("--no-include-diff", "Do not append git diff (overrides config defaults.include_diff)").option("--timeout <seconds>", "Max runtime in seconds").option("--model <name>", "Model override").option("--sandbox <mode>", "Sandbox: read-only, workspace-write, danger-full-access").option("--peer-messaging <mode>", "Claude peer messaging: native, accept, refuse").option("--schema <json>", "Request structured JSON output matching this schema").option("--session <id>", "Resume or create a persisted relay session (PaF label)").option("--backend-session <id>", "Attach to a raw backend session/thread ID (bypasses PaF label store; combine with --session to adopt it)").option("--fast", "Use fast mode when supported (maps to --pure for OpenCode; no-op elsewhere)").option("--stream", "Stream tokens as they arrive (default)").option("--no-stream", "Disable streaming output (get full response at once)").option("--review", "Use review mode (default scope: branch)").option("--review-scope <scope>", "Review scope: branch, working-tree, all").option("--base <branch>", "Base branch for review diff (default: auto-detect main/master)").option("--verdict-json", "Review with opinionated verdict envelope (implies --review). Outputs compact JSON with verdict/findings/summary.").option("--quiet", "Run silently, save result to job store").option("--no-task-history", "Do not record this run in the local task store").action(async (opts, command) => {
       const isReview = opts.review || opts.base !== void 0 || opts.reviewScope !== void 0 || opts.verdictJson;
       const isVerdictJson = Boolean(opts.verdictJson);
       if (opts.reviewScope !== void 0 && !isReviewScope(opts.reviewScope)) {

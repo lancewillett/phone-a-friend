@@ -19,7 +19,7 @@ Relay tasks to any backend, spin up multi-model teams, or run persistent multi-a
 
 | Mode | What it does | Best for |
 |------|-------------|----------|
-| **Relay** | One-shot delegation to Antigravity, Codex, Gemini, Ollama, Claude, or OpenCode | Quick second opinions, code reviews, analysis |
+| **Relay** | One-shot delegation to Antigravity, Codex, Gemini, Ollama, Claude, OpenCode, or xAI | Quick second opinions, code reviews, analysis |
 | **Team** | Iterative multi-backend refinement over N rounds | Collaborative review, converging on a solution |
 | **Agentic** | Persistent multi-agent sessions with @mention routing | Autonomous collaboration, adversarial review, deep analysis |
 
@@ -61,6 +61,7 @@ Claude `/phone-a-team` orchestrates rounds with Agent Teams: the lead spawns nam
 - [Google Antigravity CLI](https://antigravity.google/) (`agy`) for Google AI Pro/Ultra or consumer Google accounts
 - [Codex CLI](https://developers.openai.com/codex/quickstart/)
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) for API key, Vertex AI, or enterprise Gemini Code Assist flows
+- [xAI](https://console.x.ai)
 - [Ollama](https://ollama.com/download)
 - [OpenCode](https://opencode.ai/docs)
 
@@ -186,7 +187,7 @@ phone-a-friend --to codex --prompt "List files that need refactoring" \
   --schema '{"type":"object","properties":{"files":{"type":"array","items":{"type":"string"}}},"required":["files"],"additionalProperties":false}'
 ```
 
-Claude, Codex, and Ollama enforce the schema through their native structured-output surfaces. Antigravity, Gemini, and OpenCode CLI use prompt injection (best-effort), with PaF validating built-in verdict envelopes before returning them.
+Claude, Codex, and Ollama enforce the schema through their native structured-output surfaces. Antigravity, Gemini, xAI, and OpenCode CLI use prompt injection (best-effort), with PaF validating built-in verdict envelopes before returning them.
 
 Codex also receives the schema on follow-ups through `--session` or
 `--backend-session`. PaF checks `codex exec resume --help` using the invocation's
@@ -203,7 +204,7 @@ phone-a-friend --to codex --prompt "Review the auth module" --session auth-revie
 phone-a-friend --to codex --prompt "Now fix those issues" --session auth-review
 ```
 
-Sessions work reliably with Claude, Codex, Gemini, and OpenCode. Ollama replays history (may hit token limits on long conversations). Antigravity is one-shot only in this release, so `--session` is rejected for `--to antigravity`.
+Sessions work reliably with Claude, Codex, Gemini, and OpenCode. Ollama and xAI replay history (may hit token limits on long conversations). Antigravity is one-shot only in this release, so `--session` is rejected for `--to antigravity`.
 
 ### Claude peer messaging
 
@@ -376,7 +377,7 @@ phone-a-friend config show     # Show resolved config
 phone-a-friend config edit     # Open in $EDITOR
 ```
 
-`doctor` reports CLI backends, local backends (Ollama), host integration status (Claude / OpenCode / Codex plugin install state), and a summary count. Antigravity and OpenCode CLI are treated as optional: if you don't have `agy` or OpenCode installed, doctor will show them but will not flag that as a degraded state.
+`doctor` reports CLI backends, local backends (Ollama), API backends (xAI; key presence only), host integration status (Claude / OpenCode / Codex plugin install state), and a summary count. Antigravity and OpenCode CLI are treated as optional: if you don't have `agy` or OpenCode installed, doctor will show them but will not flag that as a degraded state.
 
 `doctor --json` also reports each CLI's selected executable, version, and other
 PATH candidates. It distinguishes the running PaF build from the PATH install,
@@ -429,6 +430,7 @@ state.
 | **Ollama** | HTTP API | Yes (NDJSON) |
 | **Claude** | CLI subprocess | Yes (JSON) |
 | **OpenCode** | CLI subprocess | Yes (NDJSON) |
+| **xAI** | Responses HTTP API | No |
 
 Ollama configuration via environment variables:
 - `OLLAMA_HOST` -- custom host (default: `http://localhost:11434`)
@@ -455,6 +457,16 @@ Antigravity notes:
   are rejected.
 - `--session` and `--backend-session` are not supported yet.
 - If Gemini CLI says individual Google sign-in is no longer supported, use `--to antigravity` for the Google subscription path or use Gemini CLI with an API key/Vertex flow.
+
+xAI:
+
+```bash
+phone-a-friend --to xai --prompt "Find recent X discussions with sources"
+```
+
+Requires `XAI_API_KEY` from https://console.x.ai.
+Web and X search are always on.
+Answers end with a `Sources:` list when cited; schema mode omits it.
 
 OpenCode configuration via TOML:
 ```toml
@@ -483,7 +495,7 @@ Agentic mode spawns multiple Claude agents that communicate via `@mentions` with
 Each agent accumulates context through persistent CLI sessions — later responses build on earlier ones, so agents develop genuine understanding of the problem as the session progresses.
 
 > [!IMPORTANT]
-> **Agentic mode currently supports Claude agents only.** Codex, Gemini, OpenCode, and Ollama agents are not yet wired into the orchestrator. If you need multi-host adversarial review today, use `/phone-a-team` instead — it does parallel multi-backend rounds with the same iterate-or-ship pattern, just without the persistent session graph. See [AGENTS.md](AGENTS.md) for the agentic architecture.
+> **Agentic mode currently supports Claude agents only.** Codex, Gemini, OpenCode, Ollama, and xAI agents are not yet wired into the orchestrator. If you need multi-host adversarial review today, use `/phone-a-team` instead — it does parallel multi-backend rounds with the same iterate-or-ship pattern, just without the persistent session graph. See [AGENTS.md](AGENTS.md) for the agentic architecture.
 
 ```bash
 # Start an agentic session
@@ -583,7 +595,7 @@ enough for skill changes: it re-registers the marketplace, whose plugin source i
 
 Phone a Friend does not collect, transmit, or store any data on servers operated by this project. There is no telemetry and no analytics.
 
-Prompts and repository context are passed only to backends you have installed and authenticated yourself: the Claude, Codex, Gemini, Antigravity, and OpenCode CLIs, or a local Ollama instance. Each backend is governed by its own provider's privacy policy and terms.
+Prompts and repository context are passed only to backends you have configured yourself: the Claude, Codex, Gemini, Antigravity, and OpenCode CLIs, a local Ollama instance, or the xAI Responses API using your `XAI_API_KEY`. Each backend is governed by its own provider's privacy policy and terms.
 
 Local state (config, sessions, jobs, and agentic transcripts) is written only to `~/.config/phone-a-friend/` on your machine.
 

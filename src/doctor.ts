@@ -34,7 +34,7 @@ import {
  * everything they have is working).
  */
 function countableBackends(report: DetectionReport): BackendStatus[] {
-  return [...report.cli, ...report.local].filter(b => {
+  return [...report.cli, ...report.local, ...(report.api ?? [])].filter(b => {
     if (b.planned) return false;
     if (b.optional && !b.available) return false;
     return true;
@@ -105,6 +105,14 @@ function formatHumanReadable(
   // Relay Backends
   lines.push(`  ${theme.label('Relay Backends:')}`);
 
+  if (report.api?.length) {
+    lines.push('    API:');
+    for (const b of report.api) {
+      lines.push(`  ${formatBackendLine(b)}`);
+      lines.push(...formatDiagnosticLines(b));
+    }
+  }
+
   // CLI
   if (report.cli.length > 0) {
     lines.push('    CLI:');
@@ -130,7 +138,7 @@ function formatHumanReadable(
   // Host Integrations. Commands already detailed above (codex, opencode)
   // get a one-line pointer instead of a repeated block.
   const detailed = new Set(
-    [...report.cli, ...report.local].map(b => b.executable?.command).filter(Boolean),
+    [...report.cli, ...report.local, ...(report.api ?? [])].map(b => b.executable?.command).filter(Boolean),
   );
   lines.push(`  ${theme.label('Host Integrations:')}`);
   for (const b of report.host) {
@@ -202,7 +210,7 @@ function formatDiagnosticLines(b: BackendStatus): string[] {
       lines.push(`${DIAG_INDENT}${theme.hint('also on PATH:')} ${others}${flag}`);
     }
   }
-  if (b.model && (exe?.selected || b.name === 'ollama')) {
+  if (b.model && (exe?.selected || b.name === 'ollama' || b.category === 'api')) {
     const requested = b.model.requested
       ? `${b.model.requested} (from PaF config)`
       : 'backend default';
@@ -240,7 +248,7 @@ function formatPafPathLines(paf: PafIdentity): string[] {
 function collectDiagnosticAdvisories(report: DetectionReport, paf: PafIdentity | null): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
-  for (const b of [...report.cli, ...report.local, ...report.host]) {
+  for (const b of [...report.cli, ...report.local, ...(report.api ?? []), ...report.host]) {
     const exe = b.executable;
     if (!exe || seen.has(exe.command)) continue;
     seen.add(exe.command);
@@ -291,6 +299,7 @@ function formatJson(
     backends: {
       cli: normalizeForJson(report.cli),
       local: normalizeForJson(report.local),
+      api: normalizeForJson(report.api ?? []),
     },
     host: normalizeForJson(report.host),
     hostInstallations,
